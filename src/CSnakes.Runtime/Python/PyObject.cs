@@ -2,6 +2,8 @@ using CSnakes.Runtime.CPython;
 using CSnakes.Runtime.Python.Interns;
 using System.Collections;
 using System.Diagnostics;
+using System.Dynamic;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,7 +12,7 @@ using System.Runtime.InteropServices.Marshalling;
 namespace CSnakes.Runtime.Python;
 
 [DebuggerDisplay("PyObject: repr={GetRepr()}, type={GetPythonType().ToString()}")]
-public class PyObject : SafeHandle, ICloneable
+public class PyObject : SafeHandle, ICloneable, IDynamicMetaObjectProvider
 {
     protected PyObject(IntPtr pyObject, bool ownsHandle = true) : base(pyObject, ownsHandle)
     {
@@ -537,4 +539,9 @@ public class PyObject : SafeHandle, ICloneable
     }
 
     PyObject ICloneable.Clone() => Clone();
+
+    public DynamicMetaObject GetMetaObject(Expression parameter)
+    {
+        return new PyObjectMetaObject(parameter, this);
+    }
 }
