@@ -1,5 +1,6 @@
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Text;
 
 namespace CSnakes.Runtime.Python;
 
@@ -16,10 +17,8 @@ public class PyObjectMetaObject : DynamicMetaObject
     // Override to intercept method calls
     public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
     {
-        
-
         // Extract the method name and arguments
-        string methodName = ToLowerPascalCase(binder.Name);
+        string methodName = ToSnakeCase(binder.Name);
         var argExpressions = args.Select(arg =>
         {
             // Check if the argument is already a PyObject; if not, convert it
@@ -45,14 +44,33 @@ public class PyObjectMetaObject : DynamicMetaObject
         return new DynamicMetaObject(callMethod, BindingRestrictions.GetTypeRestriction(Expression, LimitType));
     }
 
-    private static string ToPascalCase(string snakeCase)
+    public static string ToSnakeCase(string method)
     {
-        return string.Join("", snakeCase.Split('_').Select(s => s.Length > 1 ? char.ToUpperInvariant(s[0]) + s.Substring(1) : "_"));
-    }
+        if (string.IsNullOrEmpty(method))
+            return method;
 
-    private static string ToLowerPascalCase(string snakeCase)
-    {
-        // Make sure the first letter is lowercase
-        return char.ToLowerInvariant(snakeCase[0]) + ToPascalCase(snakeCase).Substring(1);
+        var sb = new StringBuilder();
+        bool wasPrevLower = false;
+
+        foreach (char c in method)
+        {
+            if (char.IsUpper(c))
+            {
+                // Add underscore before uppercase letter, except at the start or after another underscore
+                if (sb.Length > 0 && wasPrevLower)
+                {
+                    sb.Append('_');
+                }
+                sb.Append(char.ToLower(c));
+                wasPrevLower = false;
+            }
+            else
+            {
+                sb.Append(c);
+                wasPrevLower = true;
+            }
+        }
+
+        return sb.ToString();
     }
 }
